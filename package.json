@@ -9,7 +9,7 @@
   },
   "keywords": ["express", "nodejs", "backend", "api"],
   "author": "KhoaDo",
-  "license": "ISC",
+  "license": "MIT",
   "dependencies": {
     "express": "^5.2.1"
   }
