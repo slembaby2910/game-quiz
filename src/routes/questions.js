@@ -2,6 +2,21 @@ const express = require("express");
 const router = express.Router();
 const prisma = require("../lib/prisma");
 
+const authenticate = require("../middleware/auth");
+const isOwner = require("../middleware/isOwner");
+
+function formatQuestion(q) {
+  return {
+    id: q.id,
+    question: q.question,
+    answer: q.answer,
+    createdAt: q.createdAt,
+    userId: q.userId
+  };
+}
+
+router.use(authenticate);
+
 router.get("/", async (req, res) => {
   const { keyword } = req.query;
 
@@ -9,14 +24,14 @@ router.get("/", async (req, res) => {
     where: keyword
       ? {
           question: {
-            contains: keyword,
-          },
+            contains: keyword
+          }
         }
       : {},
     orderBy: { id: "asc" },
   });
 
-  res.json(questions);
+  res.json(questions.map(formatQuestion));
 });
 
 router.get("/:qId", async (req, res) => {
@@ -30,7 +45,7 @@ router.get("/:qId", async (req, res) => {
     return res.status(404).json({ message: "Question not found" });
   }
 
-  res.json(question);
+  res.json(formatQuestion(question));
 });
 
 router.post("/", async (req, res) => {
@@ -38,7 +53,7 @@ router.post("/", async (req, res) => {
 
   if (!question || !answer) {
     return res.status(400).json({
-      message: "Requires both question and answer",
+      message: "Requires both question and answer"
     });
   }
 
@@ -46,23 +61,15 @@ router.post("/", async (req, res) => {
     data: {
       question,
       answer,
-    },
+      userId: req.user.userId
+    }
   });
 
-  res.status(201).json(newQuestion);
+  res.status(201).json(formatQuestion(newQuestion));
 });
 
-router.put("/:qId", async (req, res) => {
-  const qId = Number(req.params.qId);
+router.put("/:qId", isOwner, async (req, res) => {
   const { question, answer } = req.body;
-
-  const existing = await prisma.question.findUnique({
-    where: { id: qId },
-  });
-
-  if (!existing) {
-    return res.status(404).json({ message: "Question not found" });
-  }
 
   if (!question || !answer) {
     return res.status(400).json({
@@ -71,34 +78,24 @@ router.put("/:qId", async (req, res) => {
   }
 
   const updated = await prisma.question.update({
-    where: { id: qId },
+    where: { id: Number(req.params.qId) },
     data: {
       question,
       answer,
     },
   });
 
-  res.json(updated);
+  res.json(formatQuestion(updated));
 });
 
-router.delete("/:qId", async (req, res) => {
-  const qId = Number(req.params.qId);
-
-  const existing = await prisma.question.findUnique({
-    where: { id: qId },
-  });
-
-  if (!existing) {
-    return res.status(404).json({ message: "Question not found" });
-  }
-
+router.delete("/:qId", isOwner, async (req, res) => {
   const deleted = await prisma.question.delete({
-    where: { id: qId },
+    where: { id: Number(req.params.qId) },
   });
 
   res.json({
     message: "Question deleted successfully",
-    question: deleted,
+    question: formatQuestion(deleted),
   });
 });
 

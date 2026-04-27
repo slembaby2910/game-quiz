@@ -5,15 +5,16 @@ meta {
 }
 
 post {
-  url: {{baseURL}}
+  url: http://localhost:3000/api/questions
   body: json
   auth: none
 }
 
 body:json {
   {
-    "question": "What is 5 + 5?",
-    "answer": "10"
+    "email": "slembaby2910@gmail.com",
+    "password": "1234",
+    "name": "slembaby"
   }
-  
 }
+​
