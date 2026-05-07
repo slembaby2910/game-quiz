@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>Game Quiz</title>
+
+  <style>
+    body {
+      font-family: Arial;
+      max-width: 800px;
+      margin: 40px auto;
+      padding: 20px;
+    }
+
+    input,
+    button {
+      margin: 5px;
+      padding: 8px;
+    }
+
+    .question {
+      border: 1px solid #ccc;
+      padding: 10px;
+      margin-bottom: 10px;
+    }
+
+    img {
+      max-width: 300px;
+      display: block;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>Game Quiz</h1>
+
+  <div id="auth">
+    <h2>Login</h2>
+
+    <input id="email" placeholder="email" />
+    <input id="password" type="password" placeholder="password" />
+
+    <button onclick="login()">
+      Login
+    </button>
+  </div>
+
+  <hr />
+
+  <div id="questions"></div>
+
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
