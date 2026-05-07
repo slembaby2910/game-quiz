@@ -162,8 +162,18 @@ router.put("/:qId", upload.single("image"), isOwner, async (req, res) => {
 });
 
 router.delete("/:qId", isOwner, async (req, res) => {
+  const qId = Number(req.params.qId);
+
+  await prisma.attempt.deleteMany({
+    where: {
+      questionId: qId,
+    },
+  });
+
   const deleted = await prisma.question.delete({
-    where: { id: Number(req.params.qId) },
+    where: {
+      id: qId,
+    },
   });
 
   res.json({
