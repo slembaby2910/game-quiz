@@ -14,7 +14,7 @@ describe("question routes", () => {
     expect(res.status).toBe(401);
   });
 
-  test("creates a question with valid token", async () => {
+  test("creates a question with difficulty", async () => {
     const user = await createUser();
     const token = createToken(user);
 
@@ -24,11 +24,13 @@ describe("question routes", () => {
       .send({
         question: "What is 2 + 2?",
         answer: "4",
+        difficulty: "easy",
       });
 
     expect(res.status).toBe(201);
     expect(res.body.question).toBe("What is 2 + 2?");
     expect(res.body.answer).toBe("4");
+    expect(res.body.difficulty).toBe("easy");
     expect(res.body.userName).toBe("Test User");
   });
 
@@ -46,6 +48,156 @@ describe("question routes", () => {
     expect(res.status).toBe(400);
   });
 
+  test("filters questions by difficulty", async () => {
+    const user = await createUser();
+    const token = createToken(user);
+
+    await prisma.question.create({
+      data: {
+        question: "Easy question",
+        answer: "easy",
+        difficulty: "easy",
+        userId: user.id,
+      },
+    });
+
+    await prisma.question.create({
+      data: {
+        question: "Hard question",
+        answer: "hard",
+        difficulty: "hard",
+        userId: user.id,
+      },
+    });
+
+    const res = await request(app)
+      .get("/api/questions?difficulty=easy")
+      .set("Authorization", `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.length).toBe(1);
+    expect(res.body.data[0].difficulty).toBe("easy");
+  });
+
+  test("generates random quiz questions", async () => {
+    const user = await createUser();
+    const token = createToken(user);
+
+    for (let i = 1; i <= 12; i++) {
+      await prisma.question.create({
+        data: {
+          question: `Question ${i}`,
+          answer: `Answer ${i}`,
+          difficulty: i % 2 === 0 ? "easy" : "medium",
+          userId: user.id,
+        },
+      });
+    }
+
+    const res = await request(app)
+      .get("/api/questions/quiz/random?limit=10")
+      .set("Authorization", `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.length).toBe(10);
+    expect(res.body.count).toBe(10);
+    expect(res.body.data[0].answer).toBeUndefined();
+  });
+
+  test("returns leaderboard by correct attempts", async () => {
+    const userA = await createUser({
+      email: "a@test.com",
+      name: "Player A",
+    });
+    const userB = await createUser({
+      email: "b@test.com",
+      name: "Player B",
+    });
+
+    const token = createToken(userA);
+
+    const question = await prisma.question.create({
+      data: {
+        question: "Capital of Finland?",
+        answer: "Helsinki",
+        difficulty: "medium",
+        userId: userA.id,
+      },
+    });
+
+    await prisma.attempt.createMany({
+      data: [
+        {
+          submittedAnswer: "Helsinki",
+          correct: true,
+          userId: userA.id,
+          questionId: question.id,
+        },
+        {
+          submittedAnswer: "Helsinki",
+          correct: true,
+          userId: userA.id,
+          questionId: question.id,
+        },
+        {
+          submittedAnswer: "Wrong",
+          correct: false,
+          userId: userB.id,
+          questionId: question.id,
+        },
+      ],
+    });
+
+    const res = await request(app)
+      .get("/api/questions/stats/leaderboard")
+      .set("Authorization", `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.data[0].name).toBe("Player A");
+    expect(res.body.data[0].correctAttempts).toBe(2);
+  });
+
+  test("returns current user statistics", async () => {
+    const user = await createUser();
+    const token = createToken(user);
+
+    const question = await prisma.question.create({
+      data: {
+        question: "Capital of Finland?",
+        answer: "Helsinki",
+        difficulty: "medium",
+        userId: user.id,
+      },
+    });
+
+    await prisma.attempt.createMany({
+      data: [
+        {
+          submittedAnswer: "Helsinki",
+          correct: true,
+          userId: user.id,
+          questionId: question.id,
+        },
+        {
+          submittedAnswer: "Turku",
+          correct: false,
+          userId: user.id,
+          questionId: question.id,
+        },
+      ],
+    });
+
+    const res = await request(app)
+      .get("/api/questions/stats/me")
+      .set("Authorization", `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.totalAttempts).toBe(2);
+    expect(res.body.correctAttempts).toBe(1);
+    expect(res.body.wrongAttempts).toBe(1);
+    expect(res.body.accuracy).toBe(50);
+  });
+
   test("lists questions with pagination", async () => {
     const user = await createUser();
     const token = createToken(user);
@@ -54,6 +206,7 @@ describe("question routes", () => {
       data: {
         question: "Question 1",
         answer: "Answer 1",
+        difficulty: "medium",
         userId: user.id,
       },
     });
@@ -62,6 +215,7 @@ describe("question routes", () => {
       data: {
         question: "Question 2",
         answer: "Answer 2",
+        difficulty: "medium",
         userId: user.id,
       },
     });
@@ -109,6 +263,7 @@ describe("question routes", () => {
       data: {
         question: "Capital of Finland?",
         answer: "Helsinki",
+        difficulty: "medium",
         userId: user.id,
       },
     });
@@ -142,6 +297,7 @@ describe("question routes", () => {
       data: {
         question: "Original",
         answer: "Answer",
+        difficulty: "medium",
         userId: owner.id,
       },
     });
@@ -152,6 +308,7 @@ describe("question routes", () => {
       .send({
         question: "Changed",
         answer: "Changed answer",
+        difficulty: "hard",
       });
 
     expect(res.status).toBe(403);
@@ -165,6 +322,7 @@ describe("question routes", () => {
       data: {
         question: "Delete me",
         answer: "ok",
+        difficulty: "medium",
         userId: user.id,
       },
     });

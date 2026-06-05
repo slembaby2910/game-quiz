@@ -17,11 +17,12 @@ model User {
 }
 
 model Question {
-  id        Int      @id @default(autoincrement())
-  question  String   @db.VarChar(255)
-  answer    String   @db.VarChar(255)
-  imageUrl  String?  @db.VarChar(255)
-  createdAt DateTime @default(now())
+  id         Int      @id @default(autoincrement())
+  question   String   @db.VarChar(255)
+  answer     String   @db.VarChar(255)
+  difficulty String   @default("medium") @db.VarChar(20)
+  imageUrl   String?  @db.VarChar(255)
+  createdAt  DateTime @default(now())
 
   userId   Int
   user     User      @relation(fields: [userId], references: [id])

@@ -1,15 +1,28 @@
 meta {
   name: Get post
   type: http
-  seq: 0
+  seq: 1
 }
 
 post {
   url: http://localhost:3000/api/questions
-  body: none
+  body: json
   auth: inherit
+}
+
+headers {
+  Authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjczLCJpYXQiOjE3ODA2ODk5NTAsImV4cCI6MTc4MDY5MzU1MH0.A9_f2bfHzJU-hT-IjA2FtM5pO4ouhLJ0q4ikQDyg8g4
+}
+
+body:json {
+  {
+    "question": "What is 3 + 3?",
+    "answer": "6",
+    "difficulty": "easy"
+  }
 }
 
 settings {
   encodeUrl: true
+  timeout: 0
 }
